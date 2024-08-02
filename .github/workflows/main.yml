@@ -1,0 +1,54 @@
+name: Build and Push Docker Images
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+env:
+  DOCKER_IMAGE: alexthe2/justkv
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.22
+
+      - name: Build and test
+        run: go test -v ./...
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push justkv
+        run: |
+          docker build --build-arg BUILD_TAGS="" -t $DOCKER_IMAGE:latest .
+          docker push $DOCKER_IMAGE:latest
+
+      - name: Build and push justkv_withttl
+        run: |
+          docker build --build-arg BUILD_TAGS="ttl" -t $DOCKER_IMAGE:withttl .
+          docker push $DOCKER_IMAGE:withttl
+
+      - name: Build and push justkv_withpersistent
+        run: |
+          docker build --build-arg BUILD_TAGS="persistent" -t $DOCKER_IMAGE:withpersistent .
+          docker push $DOCKER_IMAGE:withpersistent
+
+      - name: Build and push justkv_withttlandpersistent
+        run: |
+          docker build --build-arg BUILD_TAGS="ttl persistent" -t $DOCKER_IMAGE:withttlandpersistent .
+          docker push $DOCKER_IMAGE:withttlandpersistent
